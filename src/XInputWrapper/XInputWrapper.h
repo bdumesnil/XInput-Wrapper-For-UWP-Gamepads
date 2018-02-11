@@ -347,10 +347,14 @@ inline void XInputInit( XinputVersion eWantedVersion, XinputVersion& eLoadedVers
 
 	static const char* sXinputVersionName[] =
 	{
-#ifdef _WIN64
-		"XInputUWP64.dll",
+#ifdef XINPUT_WRAPPER_UWP_DLL
+		XINPUT_WRAPPER_UWP_DLL,
 #else
+	#ifdef _WIN64
+		"XInputUWP64.dll",
+	#else
 		"XInputUWP.dll",
+	#endif
 #endif
 		"xinput1_3.dll"
 	};

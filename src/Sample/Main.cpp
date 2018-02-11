@@ -1,6 +1,19 @@
 #include <stdio.h>
 #include <Windows.h>
 
+#ifdef _WIN64
+	#ifdef _DEBUG
+		#define XINPUT_WRAPPER_UWP_DLL "XInputUWP64_d.dll"
+	#else
+		#define XINPUT_WRAPPER_UWP_DLL "XInputUWP64_r.dll"
+	#endif
+#else
+	#ifdef _DEBUG
+		#define XINPUT_WRAPPER_UWP_DLL "XInputUWP_d.dll"
+	#else
+		#define XINPUT_WRAPPER_UWP_DLL "XInputUWP_r.dll"
+	#endif
+#endif
 #include "XInputWrapper.h"
 
 int main( int /*argc*/, char* /*argv[]*/ )
