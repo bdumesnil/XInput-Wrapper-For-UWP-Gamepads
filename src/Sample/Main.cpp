@@ -5,7 +5,20 @@
 
 int main( int /*argc*/, char* /*argv[]*/ )
 {
-	XInputInit();
+	XinputVersion eLoadedVersion;
+	XInputInit( XINPUT_VERSION_UWP, eLoadedVersion );
+	switch( eLoadedVersion )
+	{
+		case XINPUT_VERSION_UWP:
+			printf( "Using xinput UWP\n" );
+			break;
+		case XINPUT_VERSION_1_3:
+			printf( "Using xinput 1.3\n" );
+			break;
+		case XINPUT_VERSION_NONE:
+			printf( "Using dummy xinput\n" );
+			break;
+	}
 
 	bool bGamepadConnected[ XUSER_MAX_COUNT ];
 	for( int iGamepad = 0; iGamepad < XUSER_MAX_COUNT; ++iGamepad )
@@ -54,7 +67,7 @@ int main( int /*argc*/, char* /*argv[]*/ )
 			oVibration.wRightTriggerSpeed = ( WORD )( ( ( float )oState.Gamepad.bRightTrigger / 255.0f ) * 65535.0f );
 			XInputSetStateEx( iGamepad, &oVibration );
 		}
-		Sleep( 1 );
+		Sleep( 10 );
 	}
 
 	for( int iGamepad = 0; iGamepad < XUSER_MAX_COUNT; ++iGamepad )

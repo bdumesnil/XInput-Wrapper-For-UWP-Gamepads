@@ -293,8 +293,18 @@ inline DWORD WINAPI _XInputFakeSetStateEx( __in DWORD dwUserIndex, __in XINPUT_V
 	oVibration.wRightMotorSpeed = pVibration->wRightMotorSpeed;
 	return XInputSetState( dwUserIndex, &oVibration );
 }
-inline void WINAPI _XInputEmpyUpdate() {}
-inline void WINAPI _XInputEmpyDestroy() {}
+inline void WINAPI _XInputEmpyUpdate()																{}
+inline void WINAPI _XInputEmpyDestroy()																{}
+inline DWORD WINAPI _XInputEmpyGetState( DWORD, XINPUT_STATE* )										{ return ERROR_DEVICE_NOT_CONNECTED; }
+inline DWORD WINAPI _XInputEmpySetState( DWORD, XINPUT_VIBRATION* )									{ return ERROR_DEVICE_NOT_CONNECTED; }
+inline DWORD WINAPI _XInputEmpySetStateEx( DWORD, XINPUT_VIBRATION_EX* )							{ return ERROR_DEVICE_NOT_CONNECTED; }
+inline DWORD WINAPI _XInputEmpyGetCapabilities( DWORD, DWORD, XINPUT_CAPABILITIES* )				{ return ERROR_DEVICE_NOT_CONNECTED; }
+inline void WINAPI _XInputEmpyEnable( BOOL )														{ }
+inline DWORD WINAPI _XInputEmpyGetDSoundAudioDeviceGuids( DWORD , GUID*, GUID* )					{ return ERROR_DEVICE_NOT_CONNECTED; }
+#ifndef XINPUT_USE_9_1_0
+inline DWORD WINAPI _XInputEmpyGetBatteryInformation( DWORD, BYTE, XINPUT_BATTERY_INFORMATION* )	{ return ERROR_DEVICE_NOT_CONNECTED; }
+inline DWORD WINAPI _XInputEmpyGetKeystroke( DWORD , DWORD , PXINPUT_KEYSTROKE )					{ return ERROR_DEVICE_NOT_CONNECTED; }
+#endif //!XINPUT_USE_9_1_0
 
 inline bool _XInputCanUseUWP()
 {
@@ -323,27 +333,33 @@ inline bool _XInputCanUseUWP()
 }
 ///////////////////////////////////////////////////////////////////////////////////////
 
-inline void XInputInit()
+enum XinputVersion
 {
-	bool bIsUWP = _XInputCanUseUWP();
-	HMODULE hXInput = NULL;
-	if( bIsUWP )
+	XINPUT_VERSION_UWP,
+	XINPUT_VERSION_1_3,
+	XINPUT_VERSION_NONE
+};
+
+inline void XInputInit( XinputVersion eWantedVersion, XinputVersion& eLoadedVersion )
+{
+	if( ( eWantedVersion == XINPUT_VERSION_UWP ) && ( _XInputCanUseUWP() == false ) )
+		eWantedVersion = XINPUT_VERSION_1_3;
+
+	static const char* sXinputVersionName[] =
 	{
 #ifdef _WIN64
-		hXInput = LoadLibrary( "XInputUWP64.dll" );
+		"XInputUWP64.dll",
 #else
-		hXInput = LoadLibrary( "XInputUWP.dll" );
+		"XInputUWP.dll",
 #endif
-	}
+		"xinput1_3.dll"
+	};
 
-	if( hXInput == NULL )
+	for( eLoadedVersion = eWantedVersion; eLoadedVersion < XINPUT_VERSION_NONE; eLoadedVersion = ( XinputVersion )( eLoadedVersion + 1 ) )
 	{
-		hXInput = LoadLibrary( "xinput1_3.dll" );
-		bIsUWP = false;
-	}
-
-	if( hXInput )
-	{
+		HMODULE hXInput = LoadLibrary( sXinputVersionName[ eLoadedVersion ] );
+		if( hXInput == NULL )
+			continue;
 		XInputGetState					= ( XInputGetStateFunc )GetProcAddress( hXInput, "XInputGetState" );
 		XInputSetState					= ( XInputSetStateFunc )GetProcAddress( hXInput, "XInputSetState" );
 		XInputGetCapabilities			= ( XInputGetCapabilitiesFunc )GetProcAddress( hXInput, "XInputGetCapabilities" );
@@ -353,21 +369,40 @@ inline void XInputInit()
 		XInputGetBatteryInformation		= ( XInputGetBatteryInformationFunc )GetProcAddress( hXInput, "XInputGetBatteryInformation" );
 		XInputGetKeystroke				= ( XInputGetKeystrokeFunc )GetProcAddress( hXInput, "XInputGetKeystroke" );
 #endif	
-		if( bIsUWP )
+		if( eLoadedVersion == XINPUT_VERSION_UWP )
 		{
 			XInputDestroy				= ( XInputDestroyFunc )GetProcAddress( hXInput, "XInputDestroy" );
 			XInputUpdate				= ( XInputUpdateFunc )GetProcAddress( hXInput, "XInputUpdate" );
 			XInputSetStateEx			= ( XInputSetStateExFunc )GetProcAddress( hXInput, "XInputSetStateEx" );
 
 			typedef DWORD( WINAPI *_XInputUWPInitFunc )();
-			( ( _XInputUWPInitFunc )GetProcAddress( hXInput, "XInputInit" ) )();
+			HRESULT hr = ( ( _XInputUWPInitFunc )GetProcAddress( hXInput, "XInputInit" ) )();
+			if( hr == S_OK )
+				break;
 		}
 		else
 		{
 			XInputUpdate = _XInputEmpyUpdate;
 			XInputDestroy = _XInputEmpyDestroy;
 			XInputSetStateEx = _XInputFakeSetStateEx;
+			break;
 		}
+	}
+
+	if( eLoadedVersion == XINPUT_VERSION_NONE )
+	{
+		XInputUpdate					= _XInputEmpyUpdate;
+		XInputDestroy					= _XInputEmpyDestroy;
+		XInputGetState					= _XInputEmpyGetState;
+		XInputSetState					= _XInputEmpySetState;
+		XInputSetStateEx				= _XInputEmpySetStateEx;
+		XInputGetCapabilities			= _XInputEmpyGetCapabilities;
+		XInputEnable					= _XInputEmpyEnable;
+		XInputGetDSoundAudioDeviceGuids	= _XInputEmpyGetDSoundAudioDeviceGuids;
+#ifndef XINPUT_USE_9_1_0
+		XInputGetBatteryInformation		= _XInputEmpyGetBatteryInformation;
+		XInputGetKeystroke				= _XInputEmpyGetKeystroke;
+#endif
 	}
 }
 
