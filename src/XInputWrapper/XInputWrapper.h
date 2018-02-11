@@ -214,39 +214,39 @@ namespace XINPUT_WRAPPER_NAMESPACE
 {
 #endif
 
-typedef void (*XInputUpdateFunc)();
-typedef void(*XInputDestroyFunc)();
+typedef void ( WINAPI *XInputUpdateFunc)();
+typedef void( WINAPI *XInputDestroyFunc)();
 
-typedef DWORD (*XInputGetStateFunc)
+typedef DWORD ( WINAPI *XInputGetStateFunc)
 (
     __in  DWORD         dwUserIndex,  // Index of the gamer associated with the device
     __out XINPUT_STATE* pState        // Receives the current state
 );
 
-typedef DWORD (*XInputSetStateFunc)
+typedef DWORD ( WINAPI *XInputSetStateFunc)
 (
     __in DWORD             dwUserIndex,  // Index of the gamer associated with the device
     __in XINPUT_VIBRATION* pVibration    // The vibration information to send to the controller
 );
-typedef DWORD( *XInputSetStateExFunc )
+typedef DWORD( WINAPI  *XInputSetStateExFunc )
 (
 	__in DWORD                dwUserIndex,  // Index of the gamer associated with the device
 	__in XINPUT_VIBRATION_EX* pVibration    // The vibration information to send to the controller
 );
 
-typedef DWORD (*XInputGetCapabilitiesFunc)
+typedef DWORD ( WINAPI *XInputGetCapabilitiesFunc)
 (
     __in  DWORD                dwUserIndex,   // Index of the gamer associated with the device
     __in  DWORD                dwFlags,       // Input flags that identify the device type
     __out XINPUT_CAPABILITIES* pCapabilities  // Receives the capabilities
 );
 
-typedef void (*XInputEnableFunc )
+typedef void ( WINAPI *XInputEnableFunc )
 (
     __in BOOL enable     // [in] Indicates whether xinput is enabled or disabled. 
 );
 
-typedef DWORD (*XInputGetDSoundAudioDeviceGuidsFunc)
+typedef DWORD ( WINAPI *XInputGetDSoundAudioDeviceGuidsFunc)
 (
     __in  DWORD dwUserIndex,          // Index of the gamer associated with the device
     __out GUID* pDSoundRenderGuid,    // DSound device ID for render
@@ -255,14 +255,14 @@ typedef DWORD (*XInputGetDSoundAudioDeviceGuidsFunc)
 
 #ifndef XINPUT_USE_9_1_0
 
-typedef DWORD (*XInputGetBatteryInformationFunc)
+typedef DWORD ( WINAPI *XInputGetBatteryInformationFunc)
 (
     __in  DWORD                       dwUserIndex,        // Index of the gamer associated with the device
     __in  BYTE                        devType,            // Which device on this user index
     __out XINPUT_BATTERY_INFORMATION* pBatteryInformation // Contains the level and types of batteries
 );
 
-typedef DWORD (*XInputGetKeystrokeFunc)
+typedef DWORD ( WINAPI *XInputGetKeystrokeFunc)
 (
     __in       DWORD dwUserIndex,              // Index of the gamer associated with the device
     __reserved DWORD dwReserved,               // Reserved for future use
@@ -286,15 +286,15 @@ static XInputGetKeystrokeFunc				XInputGetKeystroke				= NULL;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
-inline DWORD _XInputFakeSetStateEx( __in DWORD dwUserIndex, __in XINPUT_VIBRATION_EX* pVibration )
+inline DWORD WINAPI _XInputFakeSetStateEx( __in DWORD dwUserIndex, __in XINPUT_VIBRATION_EX* pVibration )
 {
 	XINPUT_VIBRATION oVibration;
 	oVibration.wLeftMotorSpeed = pVibration->wLeftMotorSpeed;
 	oVibration.wRightMotorSpeed = pVibration->wRightMotorSpeed;
 	return XInputSetState( dwUserIndex, &oVibration );
 }
-inline void _XInputEmpyUpdate() {}
-inline void _XInputEmpyDestroy() {}
+inline void WINAPI _XInputEmpyUpdate() {}
+inline void WINAPI _XInputEmpyDestroy() {}
 
 inline bool _XInputCanUseUWP()
 {
@@ -359,7 +359,7 @@ inline void XInputInit()
 			XInputUpdate				= ( XInputUpdateFunc )GetProcAddress( hXInput, "XInputUpdate" );
 			XInputSetStateEx			= ( XInputSetStateExFunc )GetProcAddress( hXInput, "XInputSetStateEx" );
 
-			typedef DWORD( *_XInputUWPInitFunc )();
+			typedef DWORD( WINAPI *_XInputUWPInitFunc )();
 			( ( _XInputUWPInitFunc )GetProcAddress( hXInput, "XInputInit" ) )();
 		}
 		else

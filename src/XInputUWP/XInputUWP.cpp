@@ -83,7 +83,7 @@ HRESULT OnGamepadRemoved( IInspectable*, IGamepad* pGamepad )
 auto g_oGamepadAddedHandler = WRL::Callback<awf::IEventHandler<Gamepad*>>( OnGamepadAdded );
 auto g_oGamepadRemovedHandler = WRL::Callback<awf::IEventHandler<Gamepad*>>( OnGamepadRemoved );
 
-DWORD XInputInit()
+DWORD WINAPI XInputInit()
 {
 	HRESULT hr = S_OK;
 	hr = Windows::Foundation::Initialize( RO_INIT_MULTITHREADED );
@@ -132,7 +132,7 @@ DWORD XInputInit()
 	return hr;
 }
 
-void XInputUpdate()
+void WINAPI XInputUpdate()
 {
 	Lock oLock( &g_oState.oCriticalSection );
 	Microsoft::WRL::ComPtr<IVectorView<Gamepad*>> pGamepads = NULL;
@@ -184,7 +184,7 @@ void XInputUpdate()
 	}
 }
 
-void XInputDestroy()
+void WINAPI XInputDestroy()
 {
 	EnterCriticalSection( &g_oState.oCriticalSection );
 
@@ -218,7 +218,7 @@ static unsigned int g_iUWPToXInput[]
 	0,								// GamepadButtons_Paddle4 = 0x20000,
 };
 
-DWORD XInputGetState( DWORD dwUserIndex, XINPUT_STATE* pState )
+DWORD WINAPI XInputGetState( DWORD dwUserIndex, XINPUT_STATE* pState )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
@@ -264,7 +264,7 @@ DWORD XInputGetState( DWORD dwUserIndex, XINPUT_STATE* pState )
 	return ERROR_SUCCESS;
 }
 
-DWORD XInputSetState( __in DWORD dwUserIndex, __in XINPUT_VIBRATION* pVibration )
+DWORD WINAPI XInputSetState( __in DWORD dwUserIndex, __in XINPUT_VIBRATION* pVibration )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
@@ -285,7 +285,7 @@ DWORD XInputSetState( __in DWORD dwUserIndex, __in XINPUT_VIBRATION* pVibration 
 	return ERROR_SUCCESS;
 }
 
-DWORD XInputSetStateEx( __in DWORD dwUserIndex, __in XINPUT_VIBRATION_EX* pVibration )
+DWORD WINAPI XInputSetStateEx( __in DWORD dwUserIndex, __in XINPUT_VIBRATION_EX* pVibration )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
@@ -307,7 +307,7 @@ DWORD XInputSetStateEx( __in DWORD dwUserIndex, __in XINPUT_VIBRATION_EX* pVibra
 	return hr;
 }
 
-DWORD XInputGetCapabilities( __in DWORD dwUserIndex, __in DWORD dwFlags, __out XINPUT_CAPABILITIES* pCapabilities )
+DWORD WINAPI XInputGetCapabilities( __in DWORD dwUserIndex, __in DWORD dwFlags, __out XINPUT_CAPABILITIES* pCapabilities )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
@@ -334,13 +334,13 @@ DWORD XInputGetCapabilities( __in DWORD dwUserIndex, __in DWORD dwFlags, __out X
 	return ERROR_SUCCESS;
 }
 
-void XInputEnable( __in BOOL enable )
+void WINAPI XInputEnable( __in BOOL enable )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 	g_oState.bIsEnabled = ( enable == TRUE );
 }
 
-DWORD XInputGetDSoundAudioDeviceGuids( __in  DWORD dwUserIndex, __out GUID* pDSoundRenderGuid, __out GUID* pDSoundCaptureGuid )
+DWORD WINAPI XInputGetDSoundAudioDeviceGuids( __in  DWORD dwUserIndex, __out GUID* pDSoundRenderGuid, __out GUID* pDSoundCaptureGuid )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
@@ -353,7 +353,7 @@ DWORD XInputGetDSoundAudioDeviceGuids( __in  DWORD dwUserIndex, __out GUID* pDSo
 	return ERROR_SUCCESS;
 }
 
-DWORD XInputGetBatteryInformation( __in  DWORD dwUserIndex, __in BYTE /*devType*/, __out XINPUT_BATTERY_INFORMATION* pBatteryInformation )
+DWORD WINAPI XInputGetBatteryInformation( __in  DWORD dwUserIndex, __in BYTE /*devType*/, __out XINPUT_BATTERY_INFORMATION* pBatteryInformation )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
@@ -366,7 +366,7 @@ DWORD XInputGetBatteryInformation( __in  DWORD dwUserIndex, __in BYTE /*devType*
 	return ERROR_SUCCESS;
 }
 
-DWORD XInputGetKeystroke( __in DWORD dwUserIndex, __reserved DWORD /*dwReserved*/, __out PXINPUT_KEYSTROKE pKeystroke )
+DWORD WINAPI XInputGetKeystroke( __in DWORD dwUserIndex, __reserved DWORD /*dwReserved*/, __out PXINPUT_KEYSTROKE pKeystroke )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
