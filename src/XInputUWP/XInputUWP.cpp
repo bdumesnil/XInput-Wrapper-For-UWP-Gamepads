@@ -51,15 +51,28 @@ struct Lock
 	CRITICAL_SECTION* m_pLock;
 };
 
+bool IsGamepadAlreadyAdded( IGamepad* pGamepad )
+{
+	for( int i = 0; i < XUSER_MAX_COUNT; ++i )
+	{
+		if( g_oState.pGamepads[ i ] == pGamepad )
+			return true;
+	}
+	return false;
+}
 
 HRESULT OnGamepadAdded( IInspectable*, IGamepad* pGamepad )
 {
 	Lock oLock( &g_oState.oCriticalSection );
 
+	if( IsGamepadAlreadyAdded( pGamepad ) )
+		return S_OK;
+
 	for( int i = 0; i < XUSER_MAX_COUNT; ++i )
 	{
 		if( g_oState.pGamepads[ i ] == NULL )
 		{
+			pGamepad->AddRef();
 			g_oState.pGamepads[ i ] = pGamepad;
 			break;
 		}
@@ -75,6 +88,7 @@ HRESULT OnGamepadRemoved( IInspectable*, IGamepad* pGamepad )
 	{
 		if( g_oState.pGamepads[ i ] == pGamepad )
 		{
+			g_oState.pGamepads[ i ]->Release();
 			g_oState.pGamepads[ i ] = NULL;
 			break;
 		}
