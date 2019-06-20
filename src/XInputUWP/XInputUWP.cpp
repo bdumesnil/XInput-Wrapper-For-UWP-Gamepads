@@ -29,6 +29,7 @@ struct XInputState
 	IGamepad*				pGamepads[ XUSER_MAX_COUNT ];
 	UINT64					iTimestamps[ XUSER_MAX_COUNT ];
 	XINPUT_STATE			oLastStates[ XUSER_MAX_COUNT ];
+	bool					oFakeSetState[ XUSER_MAX_COUNT ];
 	Microsoft::WRL::ComPtr<ABI::Windows::Gaming::Input::IGamepadStatics> oGamePadStatics;
 	EventRegistrationToken	oOnControllerAddedToken;
 	EventRegistrationToken	oOnControllerRemovedToken;
@@ -96,6 +97,7 @@ DWORD WINAPI XInputInit()
 		g_oState.pGamepads[ i ]		= NULL;
 		g_oState.iTimestamps[ i ]	= 0;
 		g_oState.oLastStates[ i ]	= { 0 };
+		g_oState.oFakeSetState[ i ] = false;
 	}
 	g_oState.oOnControllerAddedToken = { 0 };
 	g_oState.oOnControllerRemovedToken = { 0 };
@@ -264,14 +266,23 @@ DWORD WINAPI XInputGetState( DWORD dwUserIndex, XINPUT_STATE* pState )
 	return ERROR_SUCCESS;
 }
 
+// Use an error code that should not be returned by XInputSetState as special return code when called from XInputSetStateEx
+#define FAKE_SET_STATE_RETURN_CODE ERROR_PRINT_CANCELLED
+
 DWORD WINAPI XInputSetState( __in DWORD dwUserIndex, __in XINPUT_VIBRATION* pVibration )
 {
-	Lock oLock( &g_oState.oCriticalSection );
-
-	if( ( dwUserIndex >= XUSER_MAX_COUNT ) || ( g_oState.pGamepads[ dwUserIndex ] == NULL ) )
+	if( dwUserIndex >= XUSER_MAX_COUNT )
 		return ERROR_DEVICE_NOT_CONNECTED;
 	if( pVibration == NULL )
 		return ERROR_INVALID_DATA;
+
+	Lock oLock( &g_oState.oCriticalSection );
+
+	if( g_oState.oFakeSetState[ dwUserIndex ] == true )
+		return FAKE_SET_STATE_RETURN_CODE;
+
+	if( g_oState.pGamepads[ dwUserIndex ] == NULL )
+		return ERROR_DEVICE_NOT_CONNECTED;
 
 	IGamepad* pGamepad = g_oState.pGamepads[ dwUserIndex ];
 	ABI::Windows::Gaming::Input::GamepadVibration oValue = { 0 };
@@ -287,12 +298,23 @@ DWORD WINAPI XInputSetState( __in DWORD dwUserIndex, __in XINPUT_VIBRATION* pVib
 
 DWORD WINAPI XInputSetStateEx( __in DWORD dwUserIndex, __in XINPUT_VIBRATION_EX* pVibration )
 {
-	Lock oLock( &g_oState.oCriticalSection );
-
-	if( ( dwUserIndex >= XUSER_MAX_COUNT ) || ( g_oState.pGamepads[ dwUserIndex ] == NULL ) )
+	if( dwUserIndex >= XUSER_MAX_COUNT )
 		return ERROR_DEVICE_NOT_CONNECTED;
 	if( pVibration == NULL )
 		return ERROR_INVALID_DATA;
+
+	{ // We need to call a fake XInputSetState to keep compatibility with external hooks ( Steam input hooks )
+		g_oState.oFakeSetState[ dwUserIndex ] = true;
+		DWORD iReturn = XInputSetState( dwUserIndex, ( XINPUT_VIBRATION* )pVibration );
+		g_oState.oFakeSetState[ dwUserIndex ] = false;
+		// if ( iReturn != FAKE_SET_STATE_RETURN_CODE ) the function has been hooked by external code
+		if( iReturn != FAKE_SET_STATE_RETURN_CODE )
+			return iReturn;
+	}
+
+	Lock oLock( &g_oState.oCriticalSection );
+	if( g_oState.pGamepads[ dwUserIndex ] == NULL )
+		return ERROR_DEVICE_NOT_CONNECTED;
 
 	IGamepad* pGamepad = g_oState.pGamepads[ dwUserIndex ];
 	ABI::Windows::Gaming::Input::GamepadVibration oValue = { 0 };
